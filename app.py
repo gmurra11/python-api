@@ -1,7 +1,5 @@
 from flask import Flask, jsonify, request, Response, json
-
-app = Flask(__name__)
-#print(__name__)
+from settings import *
 
 books = [
     {
@@ -27,6 +25,7 @@ def validBookObject(bookObject):
     else:
         return False
 
+#POST
 @app.route('/books', methods=['POST'])
 def add_book():
     request_data = request.get_json()
@@ -94,5 +93,23 @@ def update_book(isbn):
     response = Response("", status=204)
     response.headers['Location'] = "/books/" + str(isbn)
     return response
+
+#HTTP DELETE
+@app.route('/books/<int:isbn>', methods=['DELETE'])
+def delete_book(isbn):
+    i = 0;
+    for book in books:
+        if(book["isbn"] == isbn):
+            books.pop(i)  #Using the index of the list to delete array element
+            response = Response("", status=204)
+            return response
+        i += 1
+    invalidBookObjectErrorMsg = {
+        "error": "Book with ISBN not found."
+    }
+    response = Response(json.dumps(invalidBookObjectErrorMsg), status=404, mimetype='application/json')
+    return response;
+
+
 
 app.run(port=5000)
