@@ -1,23 +1,21 @@
 from flask import Flask, jsonify, request, Response, json
 from settings import *
+from BookModel import *
 
-books = [
-    {
-        'name': 'Whatever book',
-        'price': 6.99,
-        'isbn': 5645645454
-    },
-    {
-        'name': 'Another book',
-        'price': 8.99,
-        'isbn': 254564654564
-    }
-]
+import jwt, datetime
+
+app.config['SECRET_KEY'] = 'whatever'
+
+@app.route('/login')
+def get_token():
+    expiration_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=100)  #ie: token will last 100 secs, from now to 100secs
+    token = jwt.encode({'exp': expiration_date}, app.config['SECRET_KEY'], algorithm='HS256')
+    return token
 
 #By default its a GET request
 @app.route('/books')
 def get_books():
-    return jsonify({'books': books})
+    return jsonify({'books': Book.get_all_books()})
 
 def validBookObject(bookObject):
     if("name" in bookObject and "price" in bookObject and "isbn" in bookObject):
@@ -30,15 +28,10 @@ def validBookObject(bookObject):
 def add_book():
     request_data = request.get_json()
     if(validBookObject(request_data)):
-        new_book = {
-            "name": request_data['name'],
-            "price": request_data['price'],
-            "isbn": request_data['isbn']
-        }
-        books.insert(0, new_book)
+        Book.add_book(request_data['name'], request_data['price'], request_data['isbn'])
         #Reponse is a constructor, returning http status code; you need to import it at the top
         response = Response("", 201, mimetype='application/json')
-        response.headers['Location'] = "/books/" + str(new_book['isbn'])
+        response.headers['Location'] = "/books/" + str(request_data['isbn'])
         return response
     else:
         invalidBookObjectErrorMsg = {
@@ -50,46 +43,26 @@ def add_book():
 
 @app.route('/books/<int:isbn>')
 def get_isbn(isbn):
-    return_value = {}
-    for book in books:
-        if book["isbn"] == isbn:
-            return_value = {
-                'name': book["name"],
-                'price': book["price"]
-            }
-    return jsonify(return_value)
+    return_value = Book.get_book(isbn)
+    return return_value
 
-#Update or PUT method
+#PUT method
 #Note PUT requries client send full object, ie: price and name.  Partial update, eg: updating name is a http PATCH
 @app.route('/books/<int:isbn>', methods=['PUT'])
 def replace_book(isbn):
     request_data = request.get_json()
-    new_book = {
-        'name': request_data['name'],
-        'price': request_data['price'],
-        'isbn': isbn
-    }
-    i = 0;
-    for book in books:
-        currentIsbn = book["isbn"]
-        if currentIsbn == isbn:
-            books[i] = new_book
-        i += 1
+    Book.replace_book(isbn, request_data['name'], request_data['price'])
     response = Response("", status=204)
     return response
 
-#Update single element within our dictionary - we need a PATCH
+#PATCH -- Update single element within our dictionary
 @app.route('/books/<int:isbn>', methods=['PATCH'])
 def update_book(isbn):
     request_data = request.get_json()
-    updated_book = {}
     if("name" in request_data):
-        updated_book["name"] = request_data["name"]
+        Book.update_book_name(isbn, request_data['name'])
     if("price" in request_data):
-        updated_book["price"] = request_data["price"]
-    for book in books:
-        if book["isbn"] == isbn:
-            book.update(updated_book)
+        Book.update_book_price(isbn, request_data['price'])
     response = Response("", status=204)
     response.headers['Location'] = "/books/" + str(isbn)
     return response
@@ -97,13 +70,9 @@ def update_book(isbn):
 #HTTP DELETE
 @app.route('/books/<int:isbn>', methods=['DELETE'])
 def delete_book(isbn):
-    i = 0;
-    for book in books:
-        if(book["isbn"] == isbn):
-            books.pop(i)  #Using the index of the list to delete array element
-            response = Response("", status=204)
-            return response
-        i += 1
+    if(Book.delete_book(isbn)):
+        response = Response("", status=204)
+        return response
     invalidBookObjectErrorMsg = {
         "error": "Book with ISBN not found."
     }

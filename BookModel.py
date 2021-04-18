@@ -13,6 +13,7 @@ class Book(db.Model):
     price = db.Column(db.Float, nullable=False)
     isbn = db.Column(db.Integer)
 
+    #self takes in a book object
     def json(self):
         return {'name': self.name, 'price': self.price, 'isbn': self.isbn}
 
@@ -22,15 +23,18 @@ class Book(db.Model):
         db.session.commit()
 
     def get_all_books():
-        return Book.query.all() # Book comes from db.model, alot funactionality comes from this...
+        return [Book.json(book) for book in Book.query.all()]
+        # Book comes from db.model, alot funactionality comes from this...
         #The output would be <Book 1>, <Book 2> - we need a friendly format
 
     def get_book(_isbn):
-        return Book.query.filter_by(isbn=_isbn).first()
+        the_book = Book.query.filter_by(isbn=_isbn).first()
+        return Book.json(the_book)
 
     def delete_book(_isbn):
-        Book.query.filter_by(isbn=_isbn).delete()
+        is_successful = Book.query.filter_by(isbn=_isbn).delete()
         db.session.commit()
+        return bool(is_successful)
 
     def update_book_price(_isbn, _price):
         book_to_update = Book.query.filter_by(isbn=_isbn).first()
