@@ -32,15 +32,15 @@ def token_required(f):
         #decode will try, it can only exceed, otherwise everything else is a exception
         try:
             jwt.decode(token, app.config['SECRET_KEY'])
-            return f(*args, **kwargs) # return function
+            return f(*args, **kwargs) # return function to wrapper level
         except:
             return jsonify({'error': 'Need a valid token'}), 401
-    return wrapper
+    return wrapper # return to token_required level
 
 #By default its a GET request Authenticate: books?token=eyJ0eXAiOiJKV1QiLCJh
 #GET books?token=xxxxxx
 @app.route('/books')
-@token_required
+@token_required #passes in ?token variable to the wrapper
 def get_books():
     return jsonify({'books': Book.get_all_books()})
 
