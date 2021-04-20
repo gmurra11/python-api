@@ -17,7 +17,7 @@ def get_token():
     match = User.username_password_match(username, password)
 
     if match:
-        expiration_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=100)  #ie: token will last 100 secs, from now to 100secs
+        expiration_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=300)  #ie: token will last 100 secs, from now to 100secs
         token = jwt.encode({'exp': expiration_date}, app.config['SECRET_KEY'], algorithm='HS256')
         return token
     else:
@@ -26,16 +26,16 @@ def get_token():
 #Creating a decorator
 #takes a function - you need to import wraps above
 def token_required(f):
-    @wraps(f) #preserves original function name and Flask will throw an error
-    def wrapper(*arg, **kwargs):  #kw keywords
+    @wraps(f) #preserves original function name otherwise Flask will throw an error
+    def wrapper(*args, **kwargs):  #kw keywords
         token = request.args.get('token')
         #decode will try, it can only exceed, otherwise everything else is a exception
         try:
             jwt.decode(token, app.config['SECRET_KEY'])
-            return f(*args, **kwargs)
+            return f(*args, **kwargs) # return function
         except:
             return jsonify({'error': 'Need a valid token'}), 401
-        return wrapper
+    return wrapper
 
 #By default its a GET request Authenticate: books?token=eyJ0eXAiOiJKV1QiLCJh
 #GET books?token=xxxxxx
