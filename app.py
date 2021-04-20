@@ -40,7 +40,6 @@ def token_required(f):
 #By default its a GET request Authenticate: books?token=eyJ0eXAiOiJKV1QiLCJh
 #GET books?token=xxxxxx
 @app.route('/books')
-@token_required #passes in ?token variable to the wrapper
 def get_books():
     return jsonify({'books': Book.get_all_books()})
 
@@ -52,6 +51,7 @@ def validBookObject(bookObject):
 
 #POST
 @app.route('/books', methods=['POST'])
+@token_required #passes in ?token variable to the wrapper
 def add_book():
     request_data = request.get_json()
     if(validBookObject(request_data)):
@@ -76,6 +76,7 @@ def get_isbn(isbn):
 #PUT method
 #Note PUT requries client send full object, ie: price and name.  Partial update, eg: updating name is a http PATCH
 @app.route('/books/<int:isbn>', methods=['PUT'])
+@token_required #passes in ?token variable to the wrapper
 def replace_book(isbn):
     request_data = request.get_json()
     Book.replace_book(isbn, request_data['name'], request_data['price'])
@@ -84,6 +85,7 @@ def replace_book(isbn):
 
 #PATCH -- Update single element within our dictionary
 @app.route('/books/<int:isbn>', methods=['PATCH'])
+@token_required #passes in ?token variable to the wrapper
 def update_book(isbn):
     request_data = request.get_json()
     if("name" in request_data):
@@ -96,6 +98,7 @@ def update_book(isbn):
 
 #HTTP DELETE
 @app.route('/books/<int:isbn>', methods=['DELETE'])
+@token_required #passes in ?token variable to the wrapper
 def delete_book(isbn):
     if(Book.delete_book(isbn)):
         response = Response("", status=204)
@@ -105,7 +108,5 @@ def delete_book(isbn):
     }
     response = Response(json.dumps(invalidBookObjectErrorMsg), status=404, mimetype='application/json')
     return response;
-
-
 
 app.run(port=5000)
